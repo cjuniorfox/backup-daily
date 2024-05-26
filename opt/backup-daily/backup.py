@@ -37,7 +37,7 @@ def get_snapshot_data(name):
             "file_title" : file_title, 
             "tag" : f'{name}@{formatted_date}',
             "file_name" : file_name,
-            "file_name_incremental" : file_name.replace(".zfs",".incremental.zfs") if from_tag_incr != None and from_tag_incr != "" else "",
+            "file_name_incremental" : file_name_incremental if from_tag_incr != None and from_tag_incr != "" else "",
             "from_tag_incremental": from_tag_incr,
             "directory" : directory,
     }
