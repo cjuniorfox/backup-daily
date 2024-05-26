@@ -5,14 +5,14 @@ from datetime import datetime
 from glob import glob
 from operator import contains
 
-def from_tag_incremental(name,file_title,part_type,directory):
-    files = glob(os.path.join( directory, f'{file_title}*.{part_type}.gz'))
+def from_tag_incremental(name,file_title,directory):
+    files = glob(os.path.join( directory, f'{file_title}*.zfs.gz'))
     if len(files) == 0:
         return {'tag': '', 'file_name' : ''}
     files.sort()
     files.reverse()
     for i in files:
-        tag=i.split("@")[1].replace(".incremental","").replace(f".{part_type}.gz","")
+        tag=i.split("@")[1].replace(".incremental","").replace(".zfs.gz","")
         tag_name= f'{name}@{tag}'
         if glob(os.path.join(directory,f'{file_title}@{tag}.doing.txt')) :
             return {'tag':'','file_name':''}
@@ -26,23 +26,23 @@ def from_tag_incremental(name,file_title,part_type,directory):
             None
     return {'tag': '', 'file_name' : ''}
 
-def get_snapshot_data(name,part_type):
+def get_snapshot_data(name):
     file_title=name.replace('/','--')
     formatted_date = datetime.now().strftime(f"{workname}_%Y-%m-%d_T%H-%M-%S")
     file_name = f'{file_title}@{formatted_date}.zfs.gz'
-    file_name_incremental = file_name.replace(part_type,f"incremental.{part_type}")
+    file_name_incremental = file_name.replace("zfs","incremental.zfs")
     directory = os.path.join(path,file_title)
-    from_tag_incr=from_tag_incremental(name,file_title,part_type, directory)
+    from_tag_incr=from_tag_incremental(name,file_title,directory)
     return {
             "file_title" : file_title, 
             "tag" : f'{name}@{formatted_date}',
             "file_name" : file_name,
-            "file_name_incremental" : file_name_incremental if from_tag_incr != None and from_tag_incr != "" else "",
+            "file_name_incremental" : file_name.replace(".zfs",".incremental.zfs") if from_tag_incr != None and from_tag_incr != "" else "",
             "from_tag_incremental": from_tag_incr,
             "directory" : directory,
     }
 
-def get_snapshot(i,part_type):
+def get_snapshot(i):
     name = i[0]
     mounted = i[1]
     snapshot = i[2]
@@ -50,19 +50,18 @@ def get_snapshot(i,part_type):
         "name" : name , 
         "mountpoint" : mounted , 
         "mounted": snapshot ,
-        "snapshot": get_snapshot_data(name,part_type)
+        "snapshot": get_snapshot_data(name)
     }
 
-def zfs_list():
-    part_type='zfs'
+def zfs_list():  
     zfs_list=['zfs', 'list', '-t', 'filesystem', '-o' ,'name,mountpoint,mounted']
     #Filesystem
     lines = [ i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3 ]
-    filesystem=[ get_snapshot(i.split(),part_type) for i in lines if i.split()[1].lower() != 'legacy' and not contains(i.split()[0].lower(),'tmp') and i.split()[2].lower() == 'yes']
+    filesystem=[ get_snapshot(i.split()) for i in lines if i.split()[1].lower() != 'legacy' and not contains(i.split()[0].lower(),'tmp') and i.split()[2].lower() == 'yes']
     #Volumes
     zfs_list[3]='volume'
     lines = [ i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3 ]
-    volume=[get_snapshot(i.split(),part_type) for i in lines if not contains(i.split()[0].lower(),'swap') and i.split()[0].lower() != 'name']
+    volume=[get_snapshot(i.split()) for i in lines if not contains(i.split()[0].lower(),'swap') and i.split()[0].lower() != 'name']
     return filesystem + volume
 
 def take_snapshot(i):
@@ -132,5 +131,5 @@ if __name__ == '__main__':
     path=os.path.join(mountpoint,workname)
     if mount_shares(block_device,mountpoint):
     #print(zfs_list())
-        do_the_job(fs_list())
+        do_the_job(zfs_list())
         umount_shares(mountpoint)
