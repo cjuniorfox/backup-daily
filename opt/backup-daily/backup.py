@@ -165,8 +165,8 @@ def send_backup_using_bash(i,incremental=False):
     if incremental:
         with open(incr_txt_file,"w") as f:
             f.write(snap['from_tag_incremental']['file_name'])
-    zfs_cmd=f'zfs send {tag} | pv -B 512M -s $(zfs send -nP {tag} | tail -n1 | awk \'{{print $2}}\') | pigz -c > {dest_file}'
-    zfs_cmd_incr=f'zfs send -i {from_tag_incremental} {tag} | pv -B 512M -s $(zfs send -i {from_tag_incremental} -nP {tag} | awk \'{{print 2}}\' | tail -n1) | pigz -c > {dest_file}'
+    zfs_cmd=f'zfs send {tag} | pv -B 512M | tail -n1 | awk \'{{print $2}}\') | pigz -c > {dest_file}'
+    zfs_cmd_incr=f'zfs send -i {from_tag_incremental} {tag} | pv -B 512M | awk \'{{print 2}}\' | tail -n1) | pigz -c > {dest_file}'
     btrfs_cmd=f'btrfs send "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
     btrfs_cmd_incr=f'btrfs send -p "{from_tag_incremental}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
     try:
@@ -212,6 +212,7 @@ def umount_shares(mountpoint):
 
 if __name__ == '__main__':
     block_device='lacie-d2.local:/srv/Files'
+    #block_device='/dev/disk/by-uuid/97b983bc-ba92-430d-ae61-7f212bf0969a'
     mountpoint='/mnt'
     options=''
     workname = socket.gethostname()
