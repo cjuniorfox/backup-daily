@@ -17,7 +17,7 @@ def zfs_check_tag(tag_name):
     zfs_list = ['zfs','list','-t','snapshot','-o','name','-H',tag_name]
     try:
         process=subprocess.check_output(zfs_list,stderr=subprocess.PIPE)
-        return process.decode('utf-8').split[0]
+        return process.decode('utf-8').replace('\n','')
     except subprocess.CalledProcessError:
         None
 
@@ -82,7 +82,7 @@ def zfs_list():
     zfs_list=['zfs', 'list', '-t', 'filesystem', '-o' ,'name,mountpoint,mounted']
     #Filesystem
     lines = [ i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3 ]
-    filesystem=[ mountpoint_data(i.split()) for i in lines if i.split()[1].lower() != 'legacy' and not contains(i.split()[0].lower(),'tmp') and i.split()[2].lower() == 'yes']
+    filesystem=[ mountpoint_data(i.split()) for i in lines if i.split()[1].lower() != 'legacy' and not contains(i.split()[0].lower(),'tmp') and i.split()[2] == 'yes']
     #Volumes
     zfs_list[3]='volume'
     lines = [ i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3 ]
