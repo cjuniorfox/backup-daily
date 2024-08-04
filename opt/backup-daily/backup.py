@@ -22,13 +22,15 @@ def zfs_check_tag(tag_name):
         None
 
 def btrfs_check_tag(tag_name):
-    btrfs_list = ['btrfs','subvolume','list','/','-ats']
+    btrfs_list = ['btrfs','subvolume','list','/','-tsr']
     try:
         process=subprocess.check_output(btrfs_list,stderr=subprocess.PIPE)
         subvolumes=process.decode('utf-8').split('\n')
         match_item = [item for item in subvolumes if tag_name in item]
         if match_item:
-            return match_item[3].replace('<FS_TREE>/','')
+            subvol=(match_item[0].split()[6]).split('/')
+            if len(subvol) > 0:
+                return subvol[len(subvol)-1]
         return ''
     except subprocess.CalledProcessError:
         None
@@ -155,11 +157,15 @@ def send_backup_using_bash(i,incremental=False):
     snap=i['snapshot']
     tag=snap['tag']
     snapshot_dir=i['snap']
-    btrfs_snapshot=os.path.join(snapshot_dir,tag)
+    
     from_tag_incremental=snap['from_tag_incremental']['tag']
     dest_file=os.path.join(snap['directory'],(snap['file_name_incremental'] if incremental else snap['file_name'] ))
     doing_file=dest_file.replace(".incremental","").replace(f'.{fs_type}.gz',".doing.txt")
     incr_txt_file=dest_file.replace(f'.{fs_type}.gz',".txt")
+
+    btrfs_snapshot=os.path.join(snapshot_dir,tag)
+    btrfs_snapshot_incr=os.path.join(snapshot_dir,from_tag_incremental)
+    
     with open(doing_file,'w') as f:
         f.write("writing file")
     if incremental:
@@ -168,7 +174,7 @@ def send_backup_using_bash(i,incremental=False):
     zfs_cmd=f'zfs send {tag} | pv -B 512M | pigz -c > {dest_file}'
     zfs_cmd_incr=f'zfs send -i {from_tag_incremental} {tag} | pv -B 512M | pigz -c > {dest_file}'
     btrfs_cmd=f'btrfs send "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
-    btrfs_cmd_incr=f'btrfs send -p "{from_tag_incremental}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
+    btrfs_cmd_incr=f'btrfs send -p "{btrfs_snapshot_incr}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
     try:
         if is_zfs:
             zfs=subprocess.Popen(['bash','-c',zfs_cmd_incr if incremental else zfs_cmd])
@@ -185,7 +191,7 @@ def backup(i):
     os.makedirs(i['snapshot']['directory'], exist_ok=True)
     if i['snapshot']['from_tag_incremental']['tag'] != '':
         print("Sending snapshot " + i['snapshot']['tag'] + ' to the file ' + i['snapshot']['file_name_incremental'])
-        send_backup_using_bash(i,True) if is_zfs else btrfs_send_file_using_bash(i,True)
+        send_backup_using_bash(i,True)
     else:
         print("Sending snapshot " + i['snapshot']['tag'] + ' to the file ' + i['snapshot']['file_name'])
         send_backup_using_bash(i)
