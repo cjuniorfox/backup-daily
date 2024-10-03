@@ -47,7 +47,7 @@ def from_tag_incremental(name,file_title,directory):
         if glob(os.path.join(directory,f'{file_title}@{tag}.doing.txt')) :
             return {'tag':'','file_name':''}
         snapshot = zfs_check_tag(tag_name) if is_zfs else btrfs_check_tag(tag_name)
-        if len(snapshot) > 0:
+        if snapshot is not None and len(snapshot) > 0:
             return {'tag' : snapshot, 'file_name': i }
     return {'tag': '', 'file_name' : ''}
 
