@@ -24,7 +24,7 @@ python3 backup.py --block-device <BLOCK_DEVICE> --mountpoint <MOUNTPOINT> [--opt
 ## Example
 
 ```bash
-python3 backup.py --block-device lacie-d2.local:/srv/Files --mountpoint /mnt
+python3 backup.py --block-device nfs_server:/srv/Backup --mountpoint /mnt
 ```
 
 ## Logging
@@ -37,7 +37,7 @@ To automate the backup process, you can create a systemd service and timer. Belo
 
 ### Create a systemd Service
 
-Create a file named `/etc/systemd/system/backup-daily.service` with the following content:
+Create a file named `/etc/systemd/system/daily-backup.service` with the following content:
 
 ```ini
 [Unit]
@@ -45,16 +45,16 @@ Description=Daily Backup Service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /path/to/backup.py --block-device lacie-d2.local:/srv/Files --mountpoint /tmp/backup-$(date +%%Y-%%m-%%d) --options <OPTIONS>
+ExecStart=/usr/bin/python3 /path/to/backup.py --block-device nfs_server:/srv/Backup --mountpoint /tmp/daily-backup --options <OPTIONS>
 ```
 
 ### Create a systemd Timer
 
-Create a file named `/etc/systemd/system/backup-daily.timer` with the following content:
+Create a file named `/etc/systemd/system/daily-backup.timer` with the following content:
 
 ```ini
 [Unit]
-Description=Run backup-daily.service daily
+Description=Run daily-backup.service daily
 
 [Timer]
 OnCalendar=daily
@@ -69,8 +69,8 @@ WantedBy=timers.target
 Enable and start the timer with the following commands:
 
 ```bash
-sudo systemctl enable backup-daily.timer
-sudo systemctl start backup-daily.timer
+sudo systemctl enable daily-backup.timer
+sudo systemctl start daily-backup.timer
 ```
 
 This setup will run the backup script daily, using a mountpoint in the `/tmp` directory with the current date as part of the directory name.
