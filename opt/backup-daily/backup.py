@@ -190,7 +190,7 @@ def send_backup_using_bash(i, incremental=False):
             f.write(dest_file)
         logging.info('Sending snapshot tag "%s" to "%s" incrementally from "%s".', tag, dest_file, from_tag_incremental)
         zfs_cmd = f'zfs send -i {from_tag_incremental} {tag} | pv -B 512M | pigz -c > {dest_file}'
-        btrfs_cmd = f'btrfs send -p "{btrfs_snapshot_incr}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
+        btrfs_cmd = f'btrfs send -p "{from_tag_incremental}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
     else:
         logging.info('Sending snapshot tag "%s" to "%s".', tag, dest_file)
     try:
