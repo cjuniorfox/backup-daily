@@ -1,0 +1,6 @@
+[Unit]
+Description=Daily Backup Service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/backup-daily/backup.py --block-device nfs_server.lan:/srv/Backup --mountpoint /tmp/_backup
