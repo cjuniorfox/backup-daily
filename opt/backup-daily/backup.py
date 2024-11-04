@@ -254,9 +254,6 @@ def umount_shares(mountpoint):
         return False
 
 if __name__ == '__main__':
-    block_device = 'lacie-d2.local:/srv/Files'
-    mountpoint = '/mnt'
-    options = ''
     workname = socket.gethostname()
 
     fs_type = get_fs_type("/")
