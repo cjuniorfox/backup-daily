@@ -27,6 +27,18 @@ python3 backup.py --block-device <BLOCK_DEVICE> --mountpoint <MOUNTPOINT> [--opt
 python3 backup.py --block-device nfs_server:/srv/Backup --mountpoint /mnt
 ```
 
+## Restoring
+
+Restoring files from backup can be achieved using `restore.py`
+
+```bash
+sudo python3 restore.py --filesystem <FS_TYPE> --backup <BACKUP_FILE --destiny <VOLUME_OR_DATASET>
+```
+
+- `--filesystem`: If is either `btrfs` or `zfs`. Assume `btrfs` if not declared
+- `--backup`: **GZipped** backup file. `.zfs.gz` or `.btrfs.gz`. If you have incremental backups. Choose the last backup wanted to restore.
+- `--destiny`: `btrfs` *volume* or `zfs` *dataset* where the backup will be restored on. 
+
 ## Logging
 
 The script logs its operations to `/var/log/backup.log`. Ensure that the script has the necessary permissions to write to this file.
