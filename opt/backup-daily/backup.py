@@ -102,7 +102,7 @@ def mountpoint_data(i):
 def zfs_list():
     zfs_list = ['zfs', 'list', '-t', 'filesystem', '-o', 'name,mountpoint,mounted']
     lines = [i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3]
-    filesystem = [mountpoint_data(i.split()) for i in lines if i.split()[1].lower() != 'legacy' and 'tmp' not in i.split()[0].lower() and i.split()[2] == 'yes']
+    filesystem = [mountpoint_data(i.split()) for i in lines if 'tmp' not in i.split()[0].lower() and i.split()[2] == 'yes']
     zfs_list[3] = 'volume'
     lines = [i for i in subprocess.check_output(zfs_list).decode('utf-8').split('\n') if len(i.split()) == 3]
     volume = [mountpoint_data(i.split()) for i in lines if 'swap' not in i.split()[0].lower() and i.split()[0].lower() != 'name']
