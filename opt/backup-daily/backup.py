@@ -170,7 +170,7 @@ def send_backup_using_bash(i, incremental=False):
     snap = i.get('snapshot', {})
     tag = snap.get('tag')
     snapshot_dir = i.get('snap')
-
+    from_tag_file = snap.get('incremental', {}).get('from_tag',{}).get('source_file',{})
     from_tag_incremental = snap.get('incremental', {}).get('from_tag', {}).get('tag')
     dest_file = snap.get('target')
     if incremental and snap.get('incremental', {}).get('target'):
@@ -187,7 +187,7 @@ def send_backup_using_bash(i, incremental=False):
     btrfs_cmd = f'btrfs send "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
     if incremental and from_tag_incremental:
         with open(incr_txt_file, "w") as f:
-            f.write(dest_file)
+            f.write(os.path.basename(from_tag_file))
         logging.info('Sending snapshot tag "%s" to "%s" incrementally from "%s".', tag, dest_file, from_tag_incremental)
         zfs_cmd = f'zfs send -i {from_tag_incremental} {tag} | pv -B 512M | pigz -c > {dest_file}'
         btrfs_cmd = f'btrfs send -p "{from_tag_incremental}" "{btrfs_snapshot}" | pv -B 512M | pigz -c > {dest_file}'
