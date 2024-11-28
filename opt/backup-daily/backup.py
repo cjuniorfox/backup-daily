@@ -255,24 +255,38 @@ def umount_shares(mountpoint):
 
 if __name__ == '__main__':
     workname = socket.gethostname()
-
-    fs_type = get_fs_type("/")
-    is_zfs = fs_type == 'zfs'
     parser = argparse.ArgumentParser(description='Backup script for ZFS and BTRFS filesystems.')
     parser.add_argument('--print-fs-list', '-p', action='store_true', help='Does not do the backup. Just print the list of filesystems to backup.')
     parser.add_argument('--block-device', '-b', type=str, required=True, help='Backup script for ZFS and BTRFS filesystems.')
     parser.add_argument('--mountpoint', '-m', type=str, required=True, help='Mountpoint where the backup will be stored.')
     parser.add_argument('--options', '-o', type=str, required=False, help='Mounter options.')
+    parser.add_argument('--fs-type','-f', type=str, choices=['zfs','btrfs'], required=False, help='Filesystem type. Can be either zfs or btrfs.' )
     args = parser.parse_args()
-    mountpoint = args.mountpoint
+    fs_type = args.fs_type if args.fs_type else get_fs_type("/") 
+    if fs_type not in {"zfs", "btrfs"}:
+        logging.error(f"Invalid filesystem type: {fs_type}. Must be 'zfs' or 'btrfs'. "
+                  "Check your system's filesystem or use --fs-type.")
+        sys.exit(1)
+    is_zfs = fs_type == 'zfs' 
+    mountpoint = os.path.abspath(args.mountpoint)
     options = args.options
     block_device = args.block_device
     print_fs_list = args.print_fs_list
+
     DEST_PATH = os.path.join(mountpoint, workname)
-    if mount_shares(block_device, mountpoint, options):
+    if not mount_shares(block_device, mountpoint, options):
+        logging.error(f"Failed to mount block device '{block_device}' at '{mountpoint}'. Exiting.")
+        sys.exit(1)
+    try:
+        fs_list = zfs_list() if is_zfs else btrfs_list()
         if print_fs_list:
-            fs_list = zfs_list() if is_zfs else btrfs_list()
-            print(str(fs_list).replace("'", '"'))
+            print(json.dumps(fs_list))
         else:
-            do_the_job(zfs_list() if is_zfs else btrfs_list())
-        sys.exit(0 if umount_shares(mountpoint) else 1)
+            do_the_job(fs_list)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        raise
+    finally:
+        if not umount_shares(mountpoint):
+            logging.error("Failed to unmount shares.")
+            sys.exit(1)
