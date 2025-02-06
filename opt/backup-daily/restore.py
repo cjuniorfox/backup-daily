@@ -1,5 +1,4 @@
 import os
-import gzip
 import subprocess
 import argparse
 import logging
@@ -28,10 +27,10 @@ def restore_recursively(filename):
         restore_recursively(os.path.join(os.path.dirname(filename),filename_before))
     logging.info('Restoring "%s"...',os.path.basename(filename))
     if not test:
-        command = ["zfs" ,"receive" ,"-F" ,destiny ] if filesystem == 'zfs' else ['btrfs' ,'receive', destiny ]
-        with gzip.open(filename, 'rb') as gz:
-            restore = subprocess.Popen(command ,stdin=subprocess.PIPE)
-            restore.communicate(input=gz.read())
+        btrfs_cmd = f'pigz -dc "{filename}" | pv -B 512M | btrfs receive {destiny}'
+        zfs_cmd = f'pigz -dc "{filename}" | pv -B 512M | zfs receive -F "{destiny}"'
+        restore = subprocess.Popen(['bash', '-c', zfs_cmd if filesystem == 'zfs' else btrfs_cmd ])
+        restore.wait()
 
 def main():
     logging.info('Restoring to "%s"',destiny)
