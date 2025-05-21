@@ -261,6 +261,7 @@ if __name__ == '__main__':
     parser.add_argument('--mountpoint', '-m', type=str, required=True, help='Mountpoint where the backup will be stored.')
     parser.add_argument('--options', '-o', type=str, required=False, help='Mounter options.')
     parser.add_argument('--fs-type','-f', type=str, choices=['zfs','btrfs'], required=False, help='Filesystem type. Can be either zfs or btrfs.' )
+    parser.add_argument('--ignore', '-i', action='append', help='Ignore some subvolume from backup.')
     args = parser.parse_args()
     fs_type = args.fs_type if args.fs_type else get_fs_type("/") 
     if fs_type not in {"zfs", "btrfs"}:
@@ -272,6 +273,7 @@ if __name__ == '__main__':
     options = args.options
     block_device = args.block_device
     print_fs_list = args.print_fs_list
+    ignore = args.ignore if args.ignore else []
 
     DEST_PATH = os.path.join(mountpoint, workname)
     if not mount_shares(block_device, mountpoint, options):
@@ -279,6 +281,9 @@ if __name__ == '__main__':
         sys.exit(1)
     try:
         fs_list = zfs_list() if is_zfs else btrfs_list()
+        # Filter out ignored filesystems/volumes
+        if ignore:
+            fs_list = [fs for fs in fs_list if fs['name'] not in ignore]
         if print_fs_list:
             print(json.dumps(fs_list))
         else:
